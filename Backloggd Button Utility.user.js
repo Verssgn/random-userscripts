@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Backloggd Button Utility
 // @namespace    http://vers.works/
-// @version      2.3
+// @version      2.51
 // @icon         https://pbs.twimg.com/profile_images/1541908760607821824/3Am5dmsx_400x400.jpg
 // @description  Adds customizable buttons to backloggd.
 // @author       VERS
@@ -9,20 +9,18 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @license      MIT
-// @downloadURL https://update.greasyfork.org/scripts/490955/Backloggd%20Button%20Utility.user.js
-// @updateURL https://update.greasyfork.org/scripts/490955/Backloggd%20Button%20Utility.meta.js
 // ==/UserScript==
-
-// Version 2.3:
-// Fixed aligning to make the buttons look better.
-// (Soon I will be adding conditions so steam button only shows for pc games etc.)
-
-
+ 
+// Version 2.51:
+// Adds a new tag button to make mentioning easier.
+// Fixed loading error
+ 
+ 
 (function() {
     'use strict';
-
+ 
     const whitelist = ['Steam', 'SteamDB', 'SteamGridDB', 'Epic Games Store', 'GOG', 'Twitch', 'Youtube', 'XBOX', 'Playstation', 'Nintendo',];
-
+ 
     let buttons = GM_getValue('buttons', [
         {
             name: 'Steam',
@@ -110,12 +108,12 @@
             isRemovable: false
         }
     ]);
-
+ 
     function addButton(iconUrl, searchUrl, color, status, name) {
         if (!status) {
             return;
         }
-
+ 
         const button = document.createElement('button');
         button.className = 'btn btn-main journal-btn custom-button';
         button.style.width = '34px';
@@ -126,14 +124,14 @@
         button.style.display = 'inline-flex';
         button.style.justifyContent = 'center';
         button.style.alignItems = 'center';
-
+ 
         const icon = document.createElement('img');
         icon.src = iconUrl;
         icon.alt = 'Search';
         icon.style.width = '24px';
         icon.style.height = '24px';
         button.appendChild(icon);
-
+ 
         button.addEventListener('click', function() {
             if (name === 'Settings') {
                 openSettingsModal();
@@ -148,20 +146,26 @@
                 }
             }
         });
-
+ 
         const journalButtonContainer = document.querySelector('.journal-button-container');
         if (journalButtonContainer) {
+            const settingsButton = journalButtonContainer.querySelector('button[data-name="Settings"]');
             const existingButton = journalButtonContainer.querySelector(`.custom-button[data-search="${searchUrl}"]`);
+ 
             if (!existingButton) {
                 button.setAttribute('data-search', searchUrl);
                 button.setAttribute('data-name', name);
-                journalButtonContainer.appendChild(button);
+                if (settingsButton) {
+                    journalButtonContainer.insertBefore(button, settingsButton); // Insert before Settings button
+                } else {
+                    journalButtonContainer.appendChild(button); // Fallback in case settings button is not found
+                }
             }
         } else {
             console.error('Journal button container not found');
         }
     }
-
+ 
     function addSpacer() {
         const existingSpacer = document.querySelector('.journal-button-container > .spacer');
         if (!existingSpacer) {
@@ -181,14 +185,14 @@
             }
         }
     }
-
-
+ 
+ 
     function updateButtons() {
         buttons.forEach(button => {
             addButton(button.iconUrl, button.searchUrl, button.color, button.status, button.name);
         });
     }
-
+ 
     function openSettingsModal() {
         const settingsModal = document.createElement('div');
         settingsModal.className = 'settings-modal';
@@ -196,7 +200,7 @@
         settingsModal.style.top = '50%';
         settingsModal.style.left = '50%';
         settingsModal.style.transform = 'translate(-50%, -50%)';
-        settingsModal.style.backgroundColor = 'rgba(22, 24, 28)'; 
+        settingsModal.style.backgroundColor = 'rgba(22, 24, 28)';
         settingsModal.style.borderRadius = '10px';
         settingsModal.style.padding = '20px';
         settingsModal.style.zIndex = '9999';
@@ -209,7 +213,7 @@
                 <a href="https://twitter.com/versworks" target="_blank">
                     <img src="https://i.imgur.com/yXPQwtv.png" alt="Icon 2" style="margin-left: 5px;; width: 19px; height: 19px;">
                 </a>
-                <a href="https://http://vers.works/" target="_blank">
+                <a href="https://vers.works/" target="_blank">
                     <img src="https://i.imgur.com/oePEdTt.png" alt="Icon 3" style="margin-left: 5px;; width: 19px; height: 19px;">
                 </a>
             </p>
@@ -237,19 +241,19 @@
             <button id="remove-button" style="background-color: #4a5e8d; border: none; color: #fff; padding: 8px 16px; cursor: pointer; border-radius: .25rem;">Remove Custom Button</button>
             <button id="save-settings-btn" style="background-color: #fc6399; border: none; color: #fff; padding: 8px 16px; cursor: pointer; border-radius: .25rem;">Save Settings</button>
         `;
-
+ 
         document.body.appendChild(settingsModal);
-
+ 
         const addButtonBtn = document.getElementById('add-button');
         addButtonBtn.addEventListener('click', () => {
             openAddButtonModal();
         });
-
+ 
         const removeButtonBtn = document.getElementById('remove-button');
         removeButtonBtn.addEventListener('click', () => {
             openRemoveButtonModal();
         });
-
+ 
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         saveSettingsBtn.addEventListener('click', () => {
             buttons.forEach(button => {
@@ -258,15 +262,15 @@
                     button.status = checkbox.checked;
                 }
             });
-
+ 
             GM_setValue('buttons', buttons);
-
+ 
             window.location.reload();
         });
     }
-
-
-
+ 
+ 
+ 
     function openRemoveButtonModal() {
         const removeButtonModal = document.createElement('div');
         removeButtonModal.className = 'remove-button-modal';
@@ -294,9 +298,9 @@
             </ul>
             <button id="close-remove-modal" style="background-color: #4a5e8d; border: none; color: #ffffff; padding: 8px 16px; cursor: pointer; margin-top: 10px;">Close</button>
         `;
-
+ 
         document.body.appendChild(removeButtonModal);
-
+ 
         buttons
             .filter(button => !button.isSettings && !whitelist.includes(button.name))
             .forEach(button => {
@@ -306,26 +310,26 @@
                     removeButton.parentElement.remove();
                 });
             });
-
+ 
         const closeModalBtn = document.getElementById('close-remove-modal');
         closeModalBtn.addEventListener('click', () => {
             removeButtonModal.remove();
         });
     }
-
+ 
     function removeButtonFromList(buttonName) {
         buttons = buttons.filter(button => button.name !== buttonName);
         GM_setValue('buttons', buttons);
-
+ 
         const existingButtons = document.querySelectorAll('.custom-button');
         existingButtons.forEach(button => {
             button.remove();
         });
-
+ 
         addSpacer();
         updateButtons();
     }
-
+ 
     function openAddButtonModal() {
         const addButtonModal = document.createElement('div');
         addButtonModal.className = 'add-button-modal';
@@ -370,58 +374,58 @@
             <button id="save-new-button" style="background-color: #fc6399; border: none; color: #fff; padding: 8px 16px; cursor: pointer; margin-top: 10px; border-radius: 3px;">Add Button</button>
             <button id="close-button" style="background-color: #4a5e8d; border: none; color: #fff; padding: 8px 16px; cursor: pointer; margin-top: 10px; border-radius: 3px;">Close</button>
         `;
-
+ 
         document.body.appendChild(addButtonModal);
-
+ 
         const saveNewButtonBtn = document.getElementById('save-new-button');
         const closeButton = document.getElementById('close-button');
-
+ 
         function openInfoPopup(inputId, infoText) {
             const inputElement = document.getElementById(inputId);
             const infoButton = document.getElementById(`info-${inputId}`);
-
+ 
             infoButton.addEventListener('click', () => {
                 alert(infoText);
                 inputElement.focus();
             });
         }
-
+ 
         const infoTexts = {
             'website-name': 'Used for enabling/disabling in the settings (Doesnt have to be exact)',
             'icon-url': `Full URL path to a (preferably transparent) PNG.
         ✅ Correct: https://i.imgur.com/n04Muj1.jpeg
         ❌ Wrong: https://cdn-icons-png.flaticon.com/512/2815/2815428`,
             'search-url': `This is a URL when you search something without the actual thing you searched.
-
+ 
         Simple:
 Add the full URL without the thing you searched (Good if the searched term is at the end of the URL)
-
+ 
         Example (On google.com):
 If you google test you would get: https://www.google.com/search?q=test
 Then you remove 'test' and you get this, which you put into this box: https://www.google.com/search?q=
-
+ 
         Advanced:
 In rare instances, when the searched term is not at the end of the URLm you can replace the searched term with %s, which is where the game name will be put into.
-
+ 
         Example (Made-up case on Gamebanana):
 If the URL is:
 https://gamebanana.com/search?__sSearchString=TESTOrder=best_match&_idGameRow=18557
-
+ 
 We replace the 'TEST' with %s, which we will get:
 https://gamebanana.com/search?__sSearchString=%sOrder=best_match&_idGameRow=18557`,
             'color': 'Color for the button.'
         };
-
+ 
         Object.keys(infoTexts).forEach(inputId => {
             openInfoPopup(inputId, infoTexts[inputId]);
         });
-
+ 
         saveNewButtonBtn.addEventListener('click', () => {
             const websiteNameInput = document.getElementById('website-name').value;
             const iconUrlInput = document.getElementById('icon-url').value;
             const searchUrlInput = document.getElementById('search-url').value;
             const colorInput = document.getElementById('color').value;
-
+ 
             const newButton = {
                 name: websiteNameInput,
                 iconUrl: iconUrlInput,
@@ -429,21 +433,21 @@ https://gamebanana.com/search?__sSearchString=%sOrder=best_match&_idGameRow=1855
                 color: colorInput,
                 status: true
             };
-
+ 
             buttons.push(newButton);
             GM_setValue('buttons', buttons);
-
+ 
             addButton(newButton.iconUrl, newButton.searchUrl, newButton.color, newButton.status, newButton.name);
-
+ 
             window.location.reload();
         });
-
+ 
         closeButton.addEventListener('click', () => {
             addButtonModal.remove();
         });
     }
-
-
+ 
+ 
     function waitForElement(selector, callback) {
         const interval = setInterval(() => {
             const element = document.querySelector(selector);
@@ -453,51 +457,77 @@ https://gamebanana.com/search?__sSearchString=%sOrder=best_match&_idGameRow=1855
             }
         }, 100);
     }
-
-
-    function addBadgeToElement(element) {
-        const badge = document.createElement('span');
-        badge.className = 'vers-badge';
-        badge.textContent = 'SCRIPT\nDEV'; 
-        badge.style.backgroundColor = '#1aba7c';
-        badge.style.color = '#16181c';
-        badge.style.fontSize = '.7rem';
-        badge.style.borderRadius = '4px';
-        badge.style.fontWeight = '600';
-        badge.style.padding = '2px';
-        badge.style.marginLeft = '5px';
-
-        if (element.tagName.toLowerCase() === 'p') {
-            badge.textContent = 'SCRIPTDEV'; 
-        }
-
-        const textNode = element.firstChild;
-        element.insertBefore(badge, textNode.nextSibling);
+ 
+    function addAtButton() {
+        const commentRows = document.querySelectorAll('.row.mb-2');
+        commentRows.forEach(row => {
+            if (!row.querySelector('.at-button')) {
+                const atButton = document.createElement('div');
+                atButton.className = 'col-auto mt-auto pl-0 pr-1 at-button';
+                atButton.innerHTML = '<button class="button-link secondary-link" style="cursor: pointer;">@</button>';
+ 
+                const usernameDiv = row.querySelector('.col-auto.mt-auto.px-2');
+                if (usernameDiv) {
+                    const usernameLink = usernameDiv.querySelector('a.secondary-link');
+                    if (usernameLink) {
+                        const username = usernameLink.textContent.trim();
+                        atButton.querySelector('button').addEventListener('click', () => {
+                            const commentBox = document.getElementById('comment_body');
+                            if (commentBox) {
+                                const currentText = commentBox.value;
+                                const cursorPosition = commentBox.selectionStart;
+                                const textBefore = currentText.substring(0, cursorPosition);
+                                const textAfter = currentText.substring(cursorPosition);
+                                const newText = `${textBefore}@${username} ${textAfter}`;
+                                commentBox.value = newText;
+                                commentBox.focus();
+                                const newCursorPosition = cursorPosition + username.length + 2;
+                                commentBox.setSelectionRange(newCursorPosition, newCursorPosition);
+                            }
+                        });
+ 
+                        row.appendChild(atButton);
+                    }
+                }
+            }
+        });
     }
-
+ 
+    function processElements() {
+        addAtButton();
+        // Add any other element processing functions here
+    }
+ 
     const observer = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             if (mutation.type === 'childList') {
                 const addedNodes = Array.from(mutation.addedNodes);
                 addedNodes.forEach(node => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Check if the added node is part of the comment section
+                        if (node.classList && (node.classList.contains('comments-section') || node.closest('.comments-section'))) {
+                            processElements();
+                        }
+                        // Process other elements as before
                         processElements();
                     }
                 });
             }
         });
     });
-
+ 
     observer.observe(document.body, {
         childList: true,
         subtree: true
     });
-
+ 
+    // Initial setup
     addSpacer();
     updateButtons();
-
+    processElements();
+ 
     waitForElement('#title h1', (element) => {
-        const observer = new MutationObserver(function(mutationsList) {
+        const titleObserver = new MutationObserver(function(mutationsList) {
             for (let mutation of mutationsList) {
                 if (mutation.type === 'childList' && mutation.target.nodeName === 'HTML') {
                     const existingButtons = document.querySelectorAll('.custom-button');
@@ -506,18 +536,20 @@ https://gamebanana.com/search?__sSearchString=%sOrder=best_match&_idGameRow=1855
                     });
                     addSpacer();
                     updateButtons();
+                    processElements();
                 }
             }
         });
-
-        observer.observe(document, { childList: true, subtree: true });
+ 
+        titleObserver.observe(document, { childList: true, subtree: true });
     });
-
+ 
     window.onhashchange = function() {
         const existingButtons = document.querySelectorAll('.custom-button');
         existingButtons.forEach(button => {
             button.remove();
         });
         updateButtons();
+        processElements();
     };
 })();
